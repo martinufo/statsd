@@ -34,16 +34,16 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StatsdClient {
-	private static Random RNG = new Random();
-	private static Logger log = Logger.getLogger(StatsdClient.class.getName());
 
-	private InetSocketAddress _address;
-	private DatagramChannel _channel;
+    private final Logger _logger = LoggerFactory.getLogger(getClass());
+	private final InetSocketAddress _address;
+	private final DatagramChannel _channel;
 
 	public StatsdClient(String host, int port) throws UnknownHostException, IOException {
 		this(InetAddress.getByName(host), port);
@@ -54,7 +54,15 @@ public class StatsdClient {
 		_channel = DatagramChannel.open();
 	}
 
-	public boolean timing(String key, int value) {
+	public boolean gauge(String key, int value) {
+	    return gauge(key, value, 1.0);
+	}
+
+    public boolean gauge(String key, int value, double sampleRate) {
+        return send(sampleRate, String.format("%s:%d|g", key, value));
+    }
+
+    public boolean timing(String key, int value) {
 		return timing(key, value, 1.0);
 	}
 
@@ -119,7 +127,7 @@ public class StatsdClient {
 		boolean retval = false; // didn't send anything
 		if (sampleRate < 1.0) {
 			for (String stat : stats) {
-				if (RNG.nextDouble() <= sampleRate) {
+				if (ThreadLocalRandom.current().nextDouble() <= sampleRate) {
 					stat = String.format("%s|@%f", stat, sampleRate);
 					if (doSend(stat)) {
 						retval = true;
@@ -146,17 +154,16 @@ public class StatsdClient {
 			if (data.length == nbSentBytes) {
 				return true;
 			} else {
-				log.error(String.format(
-						"Could not send entirely stat %s to host %s:%d. Only sent %i bytes out of %i bytes", stat,
-						_address.getHostName(), _address.getPort(), nbSentBytes, data.length));
+			    _logger.error(String.format("Could not send entirely stat %s to host %s:%d. Only sent %i bytes out of %i bytes", stat,
+			            _address.getHostName(), _address.getPort(), nbSentBytes, data.length));
 				return false;
 			}
 
 		} catch (IOException e) {
-			log.error(
-					String.format("Could not send stat %s to host %s:%d", stat, _address.getHostName(),
-							_address.getPort()), e);
-			return false;
+            _logger.error(String.format("Could not send stat %s to host %s:%d", stat, _address.getHostName(),
+                    _address.getPort()), e);
+            return false;
 		}
 	}
+
 }
