@@ -15,8 +15,14 @@ Graphite Required Variables:
 
 Optional Variables:
 
+  backends:         an array of backends to load. Each backend must exist
+                    by name in the directory backends/. If not specified,
+                    the default graphite backend will be loaded.
   debug:            debug flag [default: false]
+  address:          address to listen on over UDP [default: 0.0.0.0]
   port:             port to listen for messages on over UDP [default: 8125]
+  mgmt_address:     address to run the management TCP interface on
+                    [default: 0.0.0.0]
   mgmt_port:        port to run the management TCP interface on [default: 8126]
   debugInterval:    interval to print debug information [ms, default: 10000]
   dumpMessages:     log all incoming messages
@@ -28,6 +34,10 @@ Optional Variables:
     interval:       how often to log frequent keys [ms, default: 0]
     percent:        percentage of frequent keys to log [%, default: 100]
     log:            location of log file for frequent keys [default: STDOUT]
+
+  console:
+    prettyprint:    whether to prettyprint the console backend
+                    output [true or false, default: true]
 
 */
 {
